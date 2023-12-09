@@ -24,3 +24,6 @@ await compileSFCs('src/', 'dist/', {
 ### Important
 It's important to run this compiler after you've process other JavaScript files and ideally before copying libraries.
 The compiler will look for the `.vue` extension in `.js` files to replace it with the `.vue.js` output extension of this compiler.
+
+#### CSS Modules
+This was not tested yet, so CSS Module (`<style module>`) might not work as expected.
