@@ -29,12 +29,16 @@ export async function compileSFCs (sourcePath, destinationPath, options) {
 
 		const sfcResult = parse(fileContents.toString());
 
-		const { code: templateCode, source: templateHTML } = compileTemplate({
-			id: fileId,
-			filename: fileName,
-			source: sfcResult.descriptor.template.content,
-			scoped: true
-		});
+		let templateCode = null, templateHTML = null;
+
+		if (sfcResult.descriptor.template !== null) {
+			({code: templateCode, source: templateHTML} = compileTemplate({
+				id: fileId,
+				filename: fileName,
+				source: sfcResult.descriptor.template.content,
+				scoped: true
+			}));
+		}
 
 		const componentScript = compileScript(sfcResult.descriptor, {
 			id: fileId,
@@ -57,18 +61,19 @@ export async function compileSFCs (sourcePath, destinationPath, options) {
 			});
 		}
 
-		let moduleCode;
+		let moduleCode = componentScript.content;
 
-		if (componentScript.setup === true) {
-			moduleCode = componentScript.content;
-		} else {
+		if (componentScript.setup !== true) {
 			if (options.useRawTemplate === true) {
-				moduleCode = `${componentScript.content}
-_sfc_object.template = \`${templateHTML}\``;
+				if (templateHTML) {
+					moduleCode += `_sfc_object.template = \`${templateHTML}\``;
+				}
 			} else {
-				moduleCode = `${templateCode}
-${componentScript.content}
+				if (templateCode) {
+					moduleCode = `${templateCode}
+${moduleCode}
 _sfc_object.render = render;`
+				}
 			}
 		}
 
