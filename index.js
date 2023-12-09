@@ -1,0 +1,91 @@
+import fs from "fs";
+
+import { minify } from "terser";
+
+import { default as replace } from "replace-in-file";
+
+import { parse, compileTemplate, compileScript, compileStyle, rewriteDefault } from '@vue/compiler-sfc';
+
+import { getAllFiles } from "./src/fileSystem.js";
+
+import idGenerator from "./src/idGenerator.js";
+
+export async function compileSFCs (sourcePath, destinationPath, options) {
+	const sourceFiles = getAllFiles(sourcePath, {filePattern: /.vue$/});
+
+	if (fs.existsSync(destinationPath) === false) {
+		fs.mkdirSync(destinationPath, {recursive: true});
+	}
+
+	for (const sourceFile of sourceFiles) {
+		const
+			fileId = idGenerator(),
+			fileContents = fs.readFileSync(sourceFile),
+			fileSourceRegex = sourcePath.replace(/^\.(\\\\|\/)/, '').replaceAll(/\//g, '(\\\\|\/)'), // Support both back & forward slashes
+			filePath = sourceFile.replace(new RegExp(`^${fileSourceRegex}`), ''),
+			filePathParts = filePath.split(/(?:\\|\/)/),
+			fileName = filePathParts.pop(),
+			fileDir = filePathParts.join('/') + "/";
+
+		const sfcResult = parse(fileContents.toString());
+
+		const { code: templateCode, source: templateHTML } = compileTemplate({
+			id: fileId,
+			filename: fileName,
+			source: sfcResult.descriptor.template.content,
+			scoped: true
+		});
+
+		const componentScript = compileScript(sfcResult.descriptor, {
+			id: fileId,
+			inlineTemplate: true,
+			genDefaultAs: "_sfc_object"
+		});
+
+		const componentStyles = [];
+
+		for (const style of sfcResult.descriptor.styles) {
+			componentStyles.push(compileStyle({
+				source: style.content,
+				id: fileId,
+				scoped: style.scoped === true
+			}));
+		}
+
+		let moduleCode;
+
+		if (componentScript.setup === true) {
+			moduleCode = componentScript.content;
+		} else {
+			if (options.useRawTemplate === true) {
+				moduleCode = `${componentScript.content}
+_sfc_object.template = \`${templateHTML}\``;
+			} else {
+				moduleCode = `${templateCode}
+${componentScript.content}
+_sfc_object.render = render;`
+			}
+		}
+
+		moduleCode = `${moduleCode}
+export default _sfc_object;`;
+
+		if (options.minify === true) {
+			({ code: moduleCode } = await minify(moduleCode, {mangle: {toplevel: true}}));
+		}
+
+		const fullDestinationPath = `${destinationPath}${fileDir}`;
+
+		if (fs.existsSync(fullDestinationPath) === false) {
+			fs.mkdirSync(fullDestinationPath, {recursive: true});
+		}
+
+		fs.writeFileSync(`${fullDestinationPath}${fileName}.js`, moduleCode, {});
+	}
+
+	replace.replaceInFileSync({
+		files: [`${destinationPath}**/*.js`, `${destinationPath}*.js`],
+		from: /\.vue(?!\.js)/g,
+		to: ".vue.js"
+	});
+}
