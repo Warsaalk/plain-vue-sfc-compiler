@@ -7,4 +7,4 @@ const cliArguments = getArguments({
 	destination: "dist/"
 })
 
-await compileSFCs(cliArguments.source, cliArguments.destination, {globalCssFile: 'dist/global.css', useRawTemplate: true});
+await compileSFCs(cliArguments.source, cliArguments.destination, {globalCssFile: 'dist/global.css', useRawTemplate: false, minify: false});

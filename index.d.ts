@@ -6,7 +6,7 @@ export interface PlainSfcOptions {
     /**
      * Optionally you can prevent the compiler from compiling the HTML.
      * This option will add the template property to your component instead of directly assigning the render function.
-     * Note: This doesn't work with <script setup>
+     * Note: This doesn't work with <script setup> or <style module>
      */
     useRawTemplate?: boolean;
     /**

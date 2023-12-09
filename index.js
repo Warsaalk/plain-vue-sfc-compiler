@@ -45,11 +45,16 @@ export async function compileSFCs (sourcePath, destinationPath, options) {
 		const componentStyles = [];
 
 		for (const style of sfcResult.descriptor.styles) {
-			componentStyles.push(compileStyle({
+			const compiledStyle = compileStyle({
 				source: style.content,
 				id: fileId,
 				scoped: style.scoped === true
-			}));
+			});
+
+			componentStyles.push({
+				type: style.module ? "module" : (style.scoped ? "scoped" : "default"),
+				code: compiledStyle.code
+			});
 		}
 
 		let moduleCode;
@@ -81,6 +86,12 @@ export default _sfc_object;`;
 		}
 
 		fs.writeFileSync(`${fullDestinationPath}${fileName}.js`, moduleCode, {});
+
+		if (options.globalCssFile !== void 0) {
+			for (const style of componentStyles) {
+				fs.writeFileSync(options.globalCssFile, style.code, {flag: "a"});
+			}
+		}
 	}
 
 	replace.replaceInFileSync({
