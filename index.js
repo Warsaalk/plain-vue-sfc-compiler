@@ -52,7 +52,8 @@ export async function compileSFCs (sourcePath, destinationPath, options) {
 			const compiledStyle = compileStyle({
 				source: style.content,
 				id: fileId,
-				scoped: style.scoped === true
+				scoped: style.scoped === true,
+				preprocessLang: style.lang ? style.lang : void 0
 			});
 
 			componentStyles.push({
