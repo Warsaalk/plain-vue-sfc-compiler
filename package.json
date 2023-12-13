@@ -1,7 +1,7 @@
 {
     "name": "plain-vue-sfc-compiler",
     "description": "A simple compiler that translates Vue Single-File Components into plain JavaScript modules. Making them easier to debug than other compilers.",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "author": {
         "name": "Klaas Van Parys",
         "email": "contact@klaas.cc",
