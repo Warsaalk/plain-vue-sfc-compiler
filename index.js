@@ -6,6 +6,8 @@ import { default as replace } from "replace-in-file";
 
 import { parse, compileTemplate, compileScript, compileStyle, rewriteDefault } from '@vue/compiler-sfc';
 
+import { transformFileSync } from "@babel/core";
+
 import { getAllFiles } from "./src/fileSystem.js";
 
 import idGenerator from "./src/idGenerator.js";
@@ -91,7 +93,18 @@ export default _sfc_object;`;
 			fs.mkdirSync(fullDestinationPath, {recursive: true});
 		}
 
-		fs.writeFileSync(`${fullDestinationPath}${fileName}.js`, moduleCode, {});
+		const extension = componentScript.lang === "ts" ? "ts" : "js";
+
+		fs.writeFileSync(`${fullDestinationPath}${fileName}.${extension}`, moduleCode, {});
+
+		if (extension === "ts") {
+			const transformedFile = transformFileSync(`${fullDestinationPath}${fileName}.${extension}`, {
+				presets: ["@babel/preset-typescript"],
+			});
+
+			fs.writeFileSync(`${fullDestinationPath}${fileName}.js`, transformedFile.code, {});
+			fs.rmSync(`${fullDestinationPath}${fileName}.ts`);
+		}
 
 		if (options.globalCssFile !== void 0) {
 			for (const style of componentStyles) {
